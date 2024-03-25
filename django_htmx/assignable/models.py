@@ -61,7 +61,7 @@ class Task(AssignableModel):
         return self.title
 
     @cached_property
-    def content_type(self):
+    def content_type_id(self):
         return ContentType.objects.get_for_model(self).id
 
     class Meta:
