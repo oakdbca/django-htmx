@@ -3,7 +3,9 @@ import logging
 from abc import ABC, ABCMeta, abstractmethod
 
 from django.contrib.auth.models import User
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
+from django.utils.functional import cached_property
 
 model_type = models.base.ModelBase
 
@@ -57,6 +59,10 @@ class Task(AssignableModel):
 
     def __str__(self):
         return self.title
+
+    @cached_property
+    def content_type(self):
+        return ContentType.objects.get_for_model(self).id
 
     class Meta:
         ordering = ["title"]
