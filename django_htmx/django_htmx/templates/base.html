@@ -28,7 +28,7 @@
     </style>
 
   </head>
-  <body class="d-flex flex-column h-100">
+  <body class="d-flex flex-column h-100" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
     <header class="mb-4">
       <!-- Fixed navbar -->
       <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
