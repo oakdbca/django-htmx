@@ -84,7 +84,7 @@ TEMPLATES = [
 ]
 
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, "components"),
+    os.path.join(BASE_DIR, "assignable/components"),
 ]
 
 WSGI_APPLICATION = "django_htmx.wsgi.application"
