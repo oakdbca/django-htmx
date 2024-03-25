@@ -17,14 +17,14 @@ class PanelAssignable(component.Component):
         }
 
     template: t.django_html = """
-        <div class="card-body">
+        <div class="card-body panel-assignable">
             <div class="mb-3">
                 <form id="assign-to" name="assign-to">
                     <input type="hidden" name="action" value="assign_to">
-                    <input type="hidden" name="content_type_id" value="{{ task.content_type_id }}">
-                    <input type="hidden" name="pk" value="{{ task.pk }}">            
+                    <input type="hidden" name="content_type_id" value="{{ assignable_instance.content_type_id }}">
+                    <input type="hidden" name="pk" value="{{ assignable_instance.pk }}">            
                     <label for="assigned-to" class="form-label">Assigned To</label>
-                    <select id="assigned-to" name="assign_to" class="form-select" hx-patch="/assignable" hx-indicator="#loading-spinner-assign-to">
+                    <select id="assigned-to" name="assign_to" class="form-select" hx-patch="/assignable" hx-indicator="#loading-spinner-assign-to" hx-swap="outerHTML" hx-target="closest .panel-assignable">
                         <option value="">Unassigned</option>
                     {% for user in assignable_instance.assignable_users %}
                         <option value="{{ user.pk }}"{% if assignable_instance.assigned_to == user %} selected="selected"{% endif %}>{{ user.get_full_name }}</option>
@@ -35,12 +35,14 @@ class PanelAssignable(component.Component):
             <div class="mb-3">
             <form id="assign-to-me" name="assign-to-me">
                 <input type="hidden" name="action" value="assign_to_me">
-                <input type="hidden" name="content_type_id" value="{{ task.content_type_id }}">
-                <input type="hidden" name="pk" value="{{ task.pk }}">
+                <input type="hidden" name="content_type_id" value="{{ assignable_instance.content_type_id }}">
+                <input type="hidden" name="pk" value="{{ assignable_instance.pk }}">
+                request user: {{ request.user }}
+                assigned_to: {{ assignable_instance.assigned_to }}
             {% if request.user == assignable_instance.assigned_to %}
                 <button type="button" class="btn btn-primary float-end" disabled="">Assigned to you <i class="bi bi-person-fill-check"></i></button>
             {% else %}
-                <button type="button" class="btn btn-primary float-end" hx-patch="/assignable" hx-swap="outerHTML">Assign to me <i class="bi bi-person-raised-hand"></i></button>
+                <button type="button" class="btn btn-primary float-end" hx-patch="/assignable" hx-swap="outerHTML" hx-target="closest .panel-assignable">Assign to me <i class="bi bi-person-raised-hand"></i></button>
             {% endif %}
             </form>
             </div>
@@ -59,11 +61,6 @@ class PanelAssignable(component.Component):
         content_type = ContentType.objects.get_for_id(content_type_id)
         assignable_instance = content_type.get_object_for_this_type(pk=pk)
 
-        logger.debug(f"Action: {action}")
-        logger.debug(f"Content Type: {content_type}")
-        logger.debug(f"PK: {pk}")
-        logger.debug(f"Assigned to: {assignable_instance.assigned_to}")
-
         if action == "assign_to":
             assign_to = data.get("assign_to", None)
             assignable_instance.assigned_to_id = assign_to
@@ -72,9 +69,9 @@ class PanelAssignable(component.Component):
 
         assignable_instance.save()
 
-        logger.debug(f"Assigned to: {assignable_instance.assigned_to}")
-
         context = {
+            "request": request,
             "assignable_instance": assignable_instance,
         }
+
         return self.render_to_response(context)
