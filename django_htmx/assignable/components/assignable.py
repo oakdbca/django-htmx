@@ -18,10 +18,10 @@ class Assignable(component.Component):
         <div class="card-body">
             <div class="mb-3">
                 <label for="assigned-to" class="form-label">Assigned To</label>
-                <select id="assigned-to" class="form-select" hx-patch="/assign-to/{{task.content_type}}/{{task.id}}/">
+                <select id="assigned-to" class="form-select" hx-patch="/assignable/assign-to/{{task.content_type}}/{{task.id}}/">
                     <option value="">Unassigned</option>
                 {% for user in assignable_instance.assignable_users %}
-                    <option value="{{ user.id }}">{{ user.get_full_name }}</option>
+                    <option value="{{ user.id }}"{% if assignable_instance.assigned_to == user %} selected="selected"{% endif %}>{{ user.get_full_name }}</option>
                 {% endfor %}
                 </select>
             </div>
@@ -29,7 +29,7 @@ class Assignable(component.Component):
             {% if request.user == assignable_instance.assigned_to %}
                 <button type="button" class="btn btn-primary float-end" disabled="">Assigned to you <i class="bi bi-person-fill-check"></i></button>
             {% else %}
-                <button type="button" class="btn btn-primary float-end" hx-patch="/assign-to-me/{{task.content_type}}/{{task.id}}/" hx-swap="outerHTML">Assign to me <i class="bi bi-person-raised-hand"></i></button>
+                <button type="button" class="btn btn-primary float-end" hx-patch="/assignable/assign-to-me/{{task.content_type}}/{{task.id}}/" hx-swap="outerHTML">Assign to me <i class="bi bi-person-raised-hand"></i></button>
             {% endif %}
             </div>
         </div>
