@@ -165,12 +165,6 @@ LOGGING = {
     },
     "root": {
         "handlers": ["console"],
-        "level": "DEBUG",
+        "level": "WARNING",
     },
-    # "loggers": {
-    #     "django_components": {
-    #         "level": logging.DEBUG,
-    #         "handlers": ["console"],
-    #     },
-    # },
 }

@@ -17,6 +17,8 @@ class PanelAssignable(component.Component):
         }
 
     template: t.django_html = """
+        {% load tags_assignable %}
+        {% request_user_can_assign assignable_instance as user_can_assign %}
         <div class="card-body panel-assignable">
             <div class="mb-3">
                 <form id="assign-to" name="assign-to">
@@ -24,7 +26,8 @@ class PanelAssignable(component.Component):
                     <input type="hidden" name="content_type_id" value="{{ assignable_instance.content_type_id }}">
                     <input type="hidden" name="pk" value="{{ assignable_instance.pk }}">            
                     <label for="assigned-to" class="form-label">Assigned To</label>
-                    <select id="assigned-to" name="assign_to" class="form-select" hx-patch="/assignable" hx-indicator="#loading-spinner-assign-to" hx-swap="outerHTML" hx-target="closest .panel-assignable">
+                    <select id="assigned-to" name="assign_to" class="form-select" hx-patch="/assignable"
+                    hx-indicator="#loading-spinner-assign-to" hx-swap="outerHTML" hx-target="closest .panel-assignable" {% if not user_can_assign %}disabled{% endif %}>
                         <option value="">Unassigned</option>
                         {% for user in assignable_instance.assignable_users %}
                         <option value="{{ user.pk }}"{% if assignable_instance.assigned_to == user %} selected="selected"{% endif %}>{{ user.get_full_name }}</option>
@@ -39,7 +42,7 @@ class PanelAssignable(component.Component):
                     <input type="hidden" name="pk" value="{{ assignable_instance.pk }}">
                     {% if request.user == assignable_instance.assigned_to %}
                     <button type="button" class="btn btn-primary float-end" disabled="">Assigned to you <i class="bi bi-person-fill-check"></i></button>
-                    {% else %}
+                    {% elif request.user in assignable_instance.assignable_users and user_can_assign %}
                     <button type="button" class="btn btn-primary float-end" hx-patch="/assignable" hx-swap="outerHTML" hx-target="closest .panel-assignable">Assign to me <i class="bi bi-person-raised-hand"></i></button>
                     {% endif %}
                 </form>
@@ -48,6 +51,9 @@ class PanelAssignable(component.Component):
     """
 
     def patch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.render_to_response({"request": request}, status=401)
+
         data = QueryDict(request.body)
         action = data.get("action", None)
         content_type_id = data.get("content_type_id", None)
@@ -59,13 +65,14 @@ class PanelAssignable(component.Component):
         content_type = ContentType.objects.get_for_id(content_type_id)
         assignable_instance = content_type.get_object_for_this_type(pk=pk)
 
-        if action == "assign_to":
-            assign_to = data.get("assign_to", None)
-            assignable_instance.assigned_to_id = assign_to
-        elif action == "assign_to_me":
-            assignable_instance.assigned_to = request.user
+        if assignable_instance.user_can_assign(request.user):
+            if action == "assign_to":
+                assign_to = data.get("assign_to", None)
+                assignable_instance.assigned_to_id = assign_to
+            elif action == "assign_to_me":
+                assignable_instance.assigned_to = request.user
 
-        assignable_instance.save()
+            assignable_instance.save()
 
         context = {
             "request": request,

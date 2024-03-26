@@ -41,12 +41,23 @@ class AssignableModel(models.Model, metaclass=AbstractModelMeta):
     def user_is_assignable(self, user: User) -> bool:
         return self.assignable_users().filter(pk=user.pk, is_active=True).exists()
 
+    def user_can_assign(self, user: User) -> bool:
+        return self.users_who_can_assign().filter(pk=user.pk).exists()
+
     @abstractmethod
     def assignable_users(self) -> models.QuerySet[User]:
         """Models implementing this class must define
         a function that returns a queryset of users that are assignable to the model."""
 
         raise NotImplementedError("Must implement method assignable_users")
+
+    @abstractmethod
+    def users_who_can_assign(self) -> models.QuerySet[User]:
+        """Models implementing this class must define
+        a function that returns a queryset of users that are allowed to assign a user.
+        """
+
+        raise NotImplementedError("Must implement method users_who_can_assign")
 
 
 class Task(AssignableModel):
@@ -56,6 +67,9 @@ class Task(AssignableModel):
 
     def assignable_users(self) -> models.QuerySet[User]:
         return User.objects.filter(is_active=True)
+
+    def users_who_can_assign(self) -> models.QuerySet[User]:
+        return User.objects.filter(is_superuser=True)
 
     def __str__(self):
         return self.title
