@@ -5,6 +5,7 @@ from django.http import QueryDict
 from django_components import component
 from django_components import types as t
 
+from assignable.models import AssignableModel
 
 logger = logging.getLogger(__name__)
 
@@ -59,20 +60,26 @@ class PanelAssignable(component.Component):
         content_type_id = data.get("content_type_id", None)
         pk = data.get("pk", None)
 
-        # TODO add logic to reject request if model is not assignable
-        # or if user is not in list of assignable users
-
         content_type = ContentType.objects.get_for_id(content_type_id)
         assignable_instance = content_type.get_object_for_this_type(pk=pk)
 
-        if assignable_instance.user_can_assign(request.user):
-            if action == "assign_to":
-                assign_to = data.get("assign_to", None)
-                assignable_instance.assigned_to_id = assign_to
-            elif action == "assign_to_me":
-                assignable_instance.assigned_to = request.user
+        if not isinstance(assignable_instance, AssignableModel):
+            logger.error(
+                f"Instance {assignable_instance} is not an assignable model"
+                "If you want to use the assignable component, make sure your model inherits from AssignableModel"
+            )
+            return self.render_to_response({"request": request}, status=400)
 
-            assignable_instance.save()
+        if not assignable_instance.user_can_assign(request.user):
+            return self.render_to_response({"request": request}, status=403)
+
+        if action == "assign_to":
+            assign_to = data.get("assign_to", None)
+            assignable_instance.assigned_to_id = assign_to
+        elif action == "assign_to_me":
+            assignable_instance.assigned_to = request.user
+
+        assignable_instance.save()
 
         context = {
             "request": request,
